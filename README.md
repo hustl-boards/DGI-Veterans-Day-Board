@@ -1,10 +1,10 @@
-# 3R Veterans Day Office TV
+# David Gooding, Inc. Veterans Day Office TV
 
-Static GitHub Pages slideshow for the office TV. Twenty-two silent 15-second clips play in order, each through to the end, then the loop starts over.
+Static GitHub Pages slideshow for the David Gooding, Inc. office TV in Brockton, Massachusetts. Twenty-two silent 15-second clips play in order, each through to the end, then the loop starts over.
 
-The TV opens <https://ross680.github.io/Veterans-Day-Office-Board/>.
+Open this repository's Pages site on the TV browser. Pages serves the `main` branch from the repository root.
 
-It follows the same full-screen board as the [Christmas Board](https://github.com/ross680/Christmas-Office-Board), the [Motivational Board](https://github.com/ross680/Motivational-Board), and the [Halloween Board](https://github.com/ross680/Halloween-Board): one stage, a thin progress bar, controls that appear when someone moves the pointer, a screen wake lock, and a reload so a TV left on for weeks picks up changes. Clips live in `assets/clips/`.
+It is the same full-screen board as the other office TVs: one stage, a thin progress bar, controls that appear when someone moves the pointer, a screen wake lock, and a reload so a TV left on for weeks picks up changes. Clips live in `assets/clips/`. The David Gooding, Inc. logo is `assets/dgi-logo.png`. The small mark, used for the tab icon, is `assets/dgi-logo-small-icon.png`. The board draws that logo over the lower part of each clip, with the line "Thank you to all who served — from David Gooding, Inc." on the title card and the tribute cards.
 
 ## Publish on GitHub Pages
 
@@ -14,7 +14,7 @@ The page is a normal static site. It does not call the GitHub API.
 2. In GitHub: **Settings → Pages**.
 3. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
 4. Branch: **main**. Folder: **/** (root).
-5. Open <https://ross680.github.io/Veterans-Day-Office-Board/> on the TV browser.
+5. Open the Pages site on the TV browser.
 
 Pages can take a minute after the push. The TV may keep the previous `index.html` for about 10 minutes. The board reloads itself every 4 hours, after the current clip finishes, and again about 15 minutes later if that ending never comes. The reload URL carries a fresh `v=` value so the TV asks for the new page instead of a cached copy.
 
@@ -26,7 +26,7 @@ Right arrow or Space: next · Left arrow: previous · P: pause · M: sound on/of
 
 Clips start muted so Chrome and TV browsers allow autoplay. M, or the sound button, turns sound on. The clips in this set are silent.
 
-Move the pointer to see the controls and the clip count (`3 / 22`). The cursor and the controls hide again after a few seconds of idle. The countdown chip sits in the top-right corner, inside the gold frame, sized so it clears the title line and the faces on the tribute clips. It ticks every second toward Wednesday, November 11, 2026 at 12:00 AM America/New_York, for example `13d 12h 25m 10s until Veterans Day`. The clock is Eastern time no matter what timezone the TV is set to. On November 11 it reads `Today is Veterans Day — thank you for your service`. After that day it keeps `HAPPY VETERANS DAY — THANK YOU FOR YOUR SERVICE`. The chip is a fixed size, so the digits changing does not move anything else. It shares the board's one-second pulse and pauses while the document is hidden. The Eastern-time formatter is created once. Building a new one on every tick is what leaked memory on the office TV after the live countdown shipped.
+Move the pointer to see the controls and the clip count (`3 / 22`). The cursor and the controls hide again after a few seconds of idle. The countdown chip sits in the top-right corner, inside the gold frame, sized so it clears the title line and the faces on the tribute clips. It shows whole days until Veterans Day, November 11, in America/New_York, for example `12 DAYS`. On November 11 it reads `Happy Veterans Day` with `Today` on the line under it. After that day it counts the days until November 11 of the next year. The chip is a fixed size, so the digits changing does not move anything else. The day count is refreshed once a minute from the board's one-second pulse, and it pauses while the document is hidden. The Eastern-time formatter is created once. Building a new one on every tick is what leaked memory on the office TV after the live countdown shipped.
 
 ## URL options
 
@@ -35,7 +35,7 @@ Move the pointer to see the controls and the clip count (`3 / 22`). The cursor a
 - `?stall=8` skips a clip whose playback time has not moved for 8 seconds (the default). An error, a real abort, or three of those failures in a row reloads the page. One bad file is skipped and the loop continues. If the network is down, the board keeps trying cached clips instead of navigating to an error page.
 - `?shuffle=1` randomizes the order when the page loads.
 - `?slide=3` starts on that clip (1 is the first).
-- `?date=2026-10-28` previews the countdown as of midnight Eastern on that day. `?date=2026-11-11` shows the Veterans Day line. `?date=2026-11-12` shows the thank-you that stays up afterward.
+- `?date=2026-10-30` previews the countdown as of that calendar day in Eastern time (`12 DAYS`). `?date=2026-11-11` shows `Happy Veterans Day` and `Today`. `?date=2026-11-12` counts the days until November 11 of the next year.
 - `?fresh=1` loads a new page for every clip. Last resort for a TV that still leaks memory.
 - `?debug=1` shows the clip name, uptime, page loads, and the last problem.
 
@@ -51,9 +51,9 @@ A clip that errors, or never produces a picture, is skipped. One bad file does n
 
 Renaming a file does not change the order. The list does.
 
-When you replace a file and keep the same name, change the `?v=` text on that line (any new string). That is the cache buster, same idea as the Halloween board. Leave `?v=` alone when the bytes did not change, or the TV downloads the clip again for no reason.
+When you replace a file and keep the same name, change the `?v=` text on that line (any new string). That is the cache buster. Leave `?v=` alone when the bytes did not change, or the TV downloads the clip again for no reason.
 
-`app.js` and `styles.css` are linked with `?v=20261028b`. Bump that text in `index.html` when you change those files so the TV does not keep an old copy. You do not need to touch it when you only edit `clips.js`.
+`app.js` and `styles.css` are linked with `?v=20261029a`. Bump that text in `index.html` when you change those files so the TV does not keep an old copy. You do not need to touch it when you only edit `clips.js`.
 
 ## Keeping the picture moving
 
@@ -69,7 +69,7 @@ After the scheduled reload the page resumes on the next clip, rather than jumpin
 
 Every shipped clip is 1920×1080, 24 fps, 15.0 seconds, faststart, plus a silent AAC track. The set is about 79 MB. The six largest files (Kennedy, the Tuskegee Airmen, the Navajo code talkers, Glenn, Freeman, and Powell) are H.264 Main profile level 4.0 with no B-frames at about 2 Mbps, which is what a memory-limited TV can keep decoded alongside the next clip. The other clips are still H.264 High profile level 4.1. Desktop Chrome plays both.
 
-A lot of TVs only hardware-decode Baseline or Main. High profile with B-frames can stay black, which is what the Halloween board ran into. If this TV does that, re-encode on a computer, put the new file in place of the old one, change `?v=`, and push:
+A lot of TVs only hardware-decode Baseline or Main. High profile with B-frames can stay black. If this TV does that, re-encode on a computer, put the new file in place of the old one, change `?v=`, and push:
 
 ```bash
 ffmpeg -y -i "INPUT.mp4" \
