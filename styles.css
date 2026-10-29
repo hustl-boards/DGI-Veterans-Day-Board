@@ -17,6 +17,15 @@ body{font-family:Georgia,"Palatino Linotype",Palatino,"Times New Roman",Times,se
 #progress span{display:block;width:0;height:100%;background:var(--gold);box-shadow:0 0 10px rgba(231,215,161,.55)}
 #countdown{position:absolute;right:24px;top:20px;z-index:5;box-sizing:border-box;width:500px;height:52px;padding:6px 12px;display:flex;align-items:center;justify-content:flex-end;text-align:right;border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(8,13,24,.92),0 0 0 3px var(--gold-deep);border-radius:2px;background:rgba(12,18,32,.92);color:var(--cream);font-family:Georgia,"Palatino Linotype",Palatino,"Times New Roman",Times,serif;font-size:22px;font-weight:700;letter-spacing:.01em;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none}
 #countdown.long{font-size:16px;letter-spacing:.02em;line-height:1.2;white-space:normal}
+#countdown.today{flex-direction:column;align-items:flex-end;justify-content:center;gap:1px;font-size:20px;line-height:1.05;letter-spacing:.01em;white-space:nowrap}
+#countdown.today span:last-child{font-size:13px;letter-spacing:.14em}
+#brand{position:absolute;z-index:5;display:none;align-items:center;box-sizing:border-box;padding:0 10px;background:#090d19;pointer-events:none;overflow:hidden}
+#brand.on{display:flex}
+#brand img{height:74%;width:auto;flex:0 0 auto;display:block;background:#fff;padding:3px 7px;box-sizing:border-box}
+#brand.mark{justify-content:center;background:#fff;padding:6px 10px}
+#brand.mark img{height:88%;background:transparent;padding:0}
+#brand.mark #brand-line{display:none}
+#brand-line{margin:0;color:var(--cream);font-weight:700;letter-spacing:.045em;line-height:1.15;text-transform:uppercase;white-space:nowrap}
 #counter{position:absolute;right:24px;top:80px;z-index:5;padding:7px 10px;border:1px solid var(--gold);box-shadow:0 0 0 1px rgba(8,13,24,.92),0 0 0 2px var(--gold-deep);border-radius:2px;background:rgba(12,18,32,.88);color:var(--cream);font-family:Georgia,"Palatino Linotype",Palatino,"Times New Roman",Times,serif;font-size:13px;font-weight:700;letter-spacing:.08em;opacity:0;transition:opacity .2s}
 #controls{position:absolute;left:50%;bottom:24px;z-index:5;transform:translateX(-50%);display:flex;gap:8px;opacity:0;transition:opacity .2s}
 #controls button{width:44px;height:38px;border-radius:2px;border:1px solid var(--gold);box-shadow:0 0 0 1px rgba(8,13,24,.92),0 0 0 2px var(--gold-deep);background:rgba(12,18,32,.9);color:var(--cream);font-family:Georgia,"Palatino Linotype",Palatino,"Times New Roman",Times,serif;font-size:17px;cursor:inherit}
@@ -25,6 +34,8 @@ body{font-family:Georgia,"Palatino Linotype",Palatino,"Times New Roman",Times,se
 @media (max-width:700px){
   #countdown{right:12px;top:12px;width:auto;max-width:calc(100% - 24px);height:auto;min-height:40px;font-size:14px;white-space:normal}
   #countdown.long{font-size:13px}
+  #countdown.today{font-size:15px;white-space:normal}
+  #countdown.today span:last-child{font-size:11px}
   #counter{right:12px;top:64px}
   #controls{bottom:14px}
   #controls button{width:40px;height:36px}

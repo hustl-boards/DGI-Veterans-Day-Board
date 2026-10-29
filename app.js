@@ -33,6 +33,8 @@
   const bar = document.querySelector('#progress span');
   const counter = document.getElementById('counter');
   const countdown = document.getElementById('countdown');
+  const brand = document.getElementById('brand');
+  const brandLine = document.getElementById('brand-line');
   const pauseBtn = document.getElementById('pause');
   const soundBtn = document.getElementById('sound');
 
@@ -107,12 +109,22 @@
   const hardReloadAt = reloadAt ? reloadAt + hardMinutes * 60 * 1000 : 0;
 
   // One formatter for the life of the page. Building a new Intl.DateTimeFormat
-  // on the one-second countdown allocated a fresh ICU object every tick, which
-  // is what ran the TV out of memory after the live countdown shipped.
+  // on every countdown tick allocated a fresh ICU object, which is what ran
+  // the TV out of memory after the live countdown shipped. The day count is
+  // painted from the one-second pulse once a minute, not every second.
   let nyFmt = null;
-  let nyClockFmt = null;
   let cachedParts = null;
   let cachedPartsAt = 0;
+  const COUNTDOWN_TICKS = 60;
+
+  // Cover boxes in the 1920×1080 picture. Side clips keep the lockup at the
+  // lower left, the title card shifts it toward center, and the closing card
+  // centers the mark. The plate hides the old lockup and the line beside it.
+  const BRAND_BOX = {
+    side: { x: 78, y: 886, w: 1000, h: 124 },
+    title: { x: 458, y: 886, w: 1004, h: 124 },
+    thanks: { x: 790, y: 886, w: 340, h: 124 }
+  };
 
   function note(msg) {
     store.set('vb_err', new Date().toLocaleTimeString() + ' ' + msg);
@@ -150,22 +162,6 @@
     return nyFmt;
   }
 
-  function clockFormatter() {
-    if (!nyClockFmt) {
-      nyClockFmt = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/New_York',
-        hourCycle: 'h23',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-    }
-    return nyClockFmt;
-  }
-
   function nyParts(date) {
     try {
       const bits = dateFormatter().formatToParts(date);
@@ -194,84 +190,96 @@
     return cachedParts;
   }
 
-  // Wednesday, November 11, 2026, 12:00 AM America/New_York.
-  // The instant is resolved once. November 2026 is Eastern Standard Time (UTC-5).
-  function wallClockUtc(y, m, d, h, mi, s) {
-    const want = Date.UTC(y, m - 1, d, h, mi, s);
-    let utc = want;
-    let fmt;
-    try {
-      fmt = clockFormatter();
-    } catch (e) {
-      return Date.UTC(2026, 10, 11, 5, 0, 0);
-    }
-    for (let n = 0; n < 4; n++) {
-      const bits = fmt.formatToParts(new Date(utc));
-      const grab = (type) => {
-        for (let i = 0; i < bits.length; i++) {
-          if (bits[i].type === type) return Number(bits[i].value);
-        }
-        return 0;
-      };
-      let hour = grab('hour');
-      if (hour === 24) hour = 0;
-      const got = Date.UTC(grab('year'), grab('month') - 1, grab('day'), hour, grab('minute'), grab('second'));
-      const delta = got - want;
-      if (delta === 0) return utc;
-      utc -= delta;
-    }
-    return utc;
-  }
-
-  const VETERANS_AT = wallClockUtc(2026, 11, 11, 0, 0, 0);
-  const AFTER_AT = wallClockUtc(2026, 11, 12, 0, 0, 0);
-
-  function frozenNow() {
-    const raw = params.get('date');
-    if (!raw) return 0;
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
-    if (!match) return 0;
-    return wallClockUtc(Number(match[1]), Number(match[2]), Number(match[3]), 0, 0, 0);
-  }
-
-  const FROZEN_NOW = frozenNow();
-
-  function clockNow() {
-    return FROZEN_NOW || Date.now();
-  }
-
-  function pad2(n) {
-    return (n < 10 ? '0' : '') + n;
-  }
-
-  // Wednesday, November 11, 2026. After that day the thank-you stays up.
+  // November 11 in America/New_York. On that calendar day the greeting is
+  // shown. After it, the count rolls to November 11 of the next year.
   function daysUntilVeteransDay(parts) {
+    let year = parts.y;
+    if (parts.m > 11 || (parts.m === 11 && parts.d > 11)) year += 1;
     const today = Date.UTC(parts.y, parts.m - 1, parts.d);
-    const veterans = Date.UTC(2026, 10, 11);
+    const veterans = Date.UTC(year, 10, 11);
     return Math.round((veterans - today) / 86400000);
   }
 
-  function countdownMessage(ms) {
-    if (ms >= AFTER_AT) return 'HAPPY VETERANS DAY \u2014 THANK YOU FOR YOUR SERVICE';
-    if (ms >= VETERANS_AT) return 'Today is Veterans Day \u2014 thank you for your service';
-    let left = VETERANS_AT - ms;
-    if (left < 0) left = 0;
-    const total = Math.floor(left / 1000);
-    const days = Math.floor(total / 86400);
-    const hours = Math.floor((total % 86400) / 3600);
-    const mins = Math.floor((total % 3600) / 60);
-    const secs = total % 60;
-    return days + 'd ' + pad2(hours) + 'h ' + pad2(mins) + 'm ' + pad2(secs) + 's until Veterans Day';
+  function paintCountdown() {
+    const days = daysUntilVeteransDay(activeParts());
+    const key = days === 0 ? 'today' : String(days);
+    if (key === shownCountdown) return;
+    shownCountdown = key;
+    countdown.classList.remove('long');
+    if (days === 0) {
+      countdown.classList.add('today');
+      countdown.replaceChildren();
+      const line = document.createElement('span');
+      line.textContent = 'Happy Veterans Day';
+      const sub = document.createElement('span');
+      sub.textContent = 'Today';
+      countdown.append(line, sub);
+    } else {
+      countdown.classList.remove('today');
+      countdown.textContent = days + (days === 1 ? ' DAY' : ' DAYS');
+    }
+    publish();
   }
 
-  function paintCountdown() {
-    const text = countdownMessage(clockNow());
-    if (text === shownCountdown) return;
-    shownCountdown = text;
-    countdown.textContent = text;
-    if (text.indexOf('until Veterans Day') === -1) countdown.classList.add('long');
-    else countdown.classList.remove('long');
-    publish();
+  function brandLayout(src) {
+    const file = labelOf(src);
+    if (file.indexOf('vd00-') === 0) return 'title';
+    if (file.indexOf('vd99-') === 0) return 'thanks';
+    return 'side';
+  }
+
+  function pictureRect() {
+    const sw = stage.clientWidth || 1920;
+    const sh = stage.clientHeight || 1080;
+    const el = activeEl();
+    const vw = el && el.videoWidth ? el.videoWidth : 1920;
+    const vh = el && el.videoHeight ? el.videoHeight : 1080;
+    const scale = Math.min(sw / vw, sh / vh);
+    const w = vw * scale;
+    const h = vh * scale;
+    return { x: (sw - w) / 2, y: (sh - h) / 2, w: w, h: h, vw: vw, vh: vh };
+  }
+
+  function placeBrand() {
+    if (!brand) return;
+    if (!clips.length) {
+      brand.classList.remove('on');
+      return;
+    }
+    const src = clips[index] || '';
+    const box = BRAND_BOX[brandLayout(src)];
+    const rect = pictureRect();
+    const sx = rect.w / rect.vw;
+    const sy = rect.h / rect.vh;
+    brand.classList.toggle('mark', brandLayout(src) === 'thanks');
+    brand.style.left = (rect.x + box.x * sx) + 'px';
+    brand.style.top = (rect.y + box.y * sy) + 'px';
+    brand.style.width = (box.w * sx) + 'px';
+    brand.style.height = (box.h * sy) + 'px';
+    brand.style.gap = Math.max(8, Math.round(rect.w * 14 / 1920)) + 'px';
+    brand.classList.add('on');
+    fitBrandLine(rect);
+  }
+
+  function fitBrandLine(rect) {
+    if (!brandLine) return;
+    if (brand.classList.contains('mark')) return;
+    brandLine.hidden = false;
+    let size = Math.max(10, Math.round(rect.h * 17 / 1080));
+    brandLine.style.fontSize = size + 'px';
+    const logo = brand.querySelector('img');
+    const logoW = logo ? logo.getBoundingClientRect().width : 0;
+    const gap = parseFloat(brand.style.gap) || 0;
+    const available = brand.clientWidth - logoW - gap - 16;
+    if (available < 48) {
+      brandLine.hidden = true;
+      return;
+    }
+    if (brandLine.scrollWidth > available) {
+      size = Math.max(9, Math.floor(size * available / brandLine.scrollWidth));
+      brandLine.style.fontSize = size + 'px';
+    }
+    if (brandLine.scrollWidth > available + 1) brandLine.hidden = true;
   }
 
   function publish() {
@@ -534,6 +542,7 @@
     el.muted = !wantSound;
     el.defaultMuted = !wantSound;
     sweepStrays();
+    placeBrand();
     publish();
     // The load algorithm fires abort/emptied before this function returns.
     setTimeout(() => {
@@ -552,6 +561,7 @@
     counter.textContent = window.CLIPS ? 'No clips yet' : 'Playlist missing';
     counter.style.opacity = '1';
     bar.style.width = '0%';
+    placeBrand();
     publish();
   }
 
@@ -789,13 +799,14 @@
     if (ev && ev.preventDefault) ev.preventDefault();
   });
 
-  // One pulse for the countdown, the stall watchdog, the per-clip cap, the
-  // wake lock, and the reload deadlines. It is created once.
+  // One pulse for the stall watchdog, the per-clip cap, the wake lock, and
+  // the reload deadlines. It is created once. The day countdown is painted
+  // from this same pulse once a minute.
   let pulseCount = 0;
   setInterval(() => {
     pulseCount += 1;
     try {
-      if (!document.hidden) paintCountdown();
+      if (!document.hidden && pulseCount % COUNTDOWN_TICKS === 0) paintCountdown();
       if (pulseCount % 60 === 0) wake();
       if (reloading) return;
       checkReload();
@@ -870,6 +881,12 @@
   }
 
   paintCountdown();
+  placeBrand();
+  addEventListener('resize', placeBrand);
+  if (brand) {
+    const logo = brand.querySelector('img');
+    if (logo && !logo.complete) logo.addEventListener('load', placeBrand);
+  }
   wake();
   document.addEventListener('visibilitychange', onVisible);
 
